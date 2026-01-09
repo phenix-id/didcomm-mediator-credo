@@ -3,6 +3,7 @@ import * as os from 'node:os'
 import {
   AddMessageOptions,
   Agent,
+  ConnectionEventTypes,
   ConnectionRecord,
   ConnectionService,
   GetAvailableMessageCountOptions,
@@ -182,6 +183,53 @@ export class PostgresMessagePickupRepository implements MessagePickupRepository 
               encryptedMessage: message.encryptedMessage,
               options: { transportPriority: { schemes: ['ws', 'wss'], restrictive: true } },
             })
+          }
+        })
+        options.agent.events.on(ConnectionEventTypes.ConnectionStateChanged, async (data) => {
+          const connectionRecord = data.payload.connectionRecord as ConnectionRecord
+          const previousState = data.payload.previousState
+
+            if (
+              connectionRecord.protocol?.includes('connections/1.') &&
+              previousState !== 'completed' &&
+              connectionRecord.state === 'completed'
+            ) {
+
+            if (connectionIdWaitSet.has(connectionRecord.id)) return
+
+            connectionIdWaitSet.add(connectionRecord.id)
+
+            // Wait a moment to allow pickup v2 session to be established
+            await new Promise((resolve) => setTimeout(resolve, 500))
+
+            const sessionInDB = await this.findLiveSessionInDb(connectionRecord.id)
+            if (!sessionInDB) {
+              pickupSessionService.saveLiveSession(options.agent.context, {
+                connectionId: connectionRecord.id,
+                protocolVersion: 'v2',
+                role: MessagePickupSessionRole.MessageHolder,
+              })
+            }
+
+            connectionIdWaitSet.delete(connectionRecord.id)
+
+            const messagesToDeliver = await this.takeFromQueue({
+              connectionId: connectionRecord.id,
+              limit: 10,
+              deleteMessages: true,
+            })
+
+            if (messagesToDeliver.length === 0) return
+
+            const connection = await connectionsService.getById(options.agent.context, connectionRecord.id)
+            for (const message of messagesToDeliver) {
+              await messageSender.sendPackage(options.agent.context, {
+                connection,
+                recipientKey: connection.did ?? connection.id,
+                encryptedMessage: message.encryptedMessage,
+                options: { transportPriority: { schemes: ['ws', 'wss'], restrictive: true } },
+              })
+            }
           }
         })
       }
