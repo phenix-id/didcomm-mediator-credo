@@ -200,7 +200,7 @@ export class PostgresMessagePickupRepository implements MessagePickupRepository 
             connectionIdWaitSet.add(connectionRecord.id)
 
             // Wait a moment to allow pickup v2 session to be established
-            await new Promise((resolve) => setTimeout(resolve, 500))
+            await new Promise((resolve) => setTimeout(resolve, 200))
 
             const sessionInDB = await this.findLiveSessionInDb(connectionRecord.id)
             if (!sessionInDB) {
