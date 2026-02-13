@@ -1,4 +1,5 @@
 {
+  "_warning": "TEMPLATE FILE - DO NOT COMMIT WITH REAL CREDENTIALS. Replace all placeholder values (your-*) with actual credentials before use.",
   "agentPort": 5566,
   "agentName": "Credo Azure Mediator",
   "agentEndpoints": ["http://localhost:5566", "ws://localhost:5566"],
