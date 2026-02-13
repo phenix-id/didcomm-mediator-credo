@@ -31,9 +31,7 @@ suite('cosmosdb client', () => {
       client = await CosmosDbClientRepository.initialize({
         logger: new ConsoleLogger(LogLevel.off),
         endpoint: process.env.COSMOSDB_ENDPOINT ?? 'https://localhost:8081',
-        key:
-          process.env.COSMOSDB_KEY ??
-          'C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==',
+        key: process.env.COSMOSDB_KEY as string,
         databaseName: 'test-didcomm-mediator',
         containerName: 'test-queued-messages',
       })
